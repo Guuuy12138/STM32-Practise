@@ -24,12 +24,12 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "drv8833.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+#define count_MID 20
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -92,13 +92,34 @@ int main(void)
   MX_TIM2_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-
+  HAL_TIM_Encoder_Start(&htim1, TIM_CHANNEL_ALL);
+  DRV8833_Init();
+  __HAL_TIM_SET_COUNTER(&htim1, count_MID);
+  int count = 0;
+  int speed = 0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    count = __HAL_TIM_GET_COUNTER(&htim1);
+    if(count > 6000){
+      count = 0;
+      __HAL_TIM_SET_COUNTER(&htim1, 0);
+    }else if(count > 40){
+      count = 40;
+      __HAL_TIM_SET_COUNTER(&htim1, 40);
+    }
+    if(count < count_MID){
+      speed = (count_MID - count) * 100 / count_MID;
+      DRV8833_Forward(speed);
+    }else if(count > count_MID){
+      speed = (count - count_MID) * 100 / count_MID;
+      DRV8833_Backward(speed);
+    }
+    HAL_Delay(100);
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
