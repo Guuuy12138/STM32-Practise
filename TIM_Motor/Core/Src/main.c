@@ -117,6 +117,8 @@ int main(void)
     }else if(count > count_MID){
       speed = (count - count_MID) * 100 / count_MID;
       DRV8833_Backward(speed);
+    }else {
+      DRV8833_Brake();
     }
     HAL_Delay(100);
 
