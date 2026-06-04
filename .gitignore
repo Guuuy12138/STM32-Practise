@@ -1,0 +1,44 @@
+# 编译输出
+build/
+Debug/
+Release/
+*.o
+*.d
+*.elf
+*.hex
+*.bin
+*.map
+*.su
+*.crf
+*.lnp
+*.htm
+*.sct
+*.dep
+*.bak
+*.lst
+
+# Keil / MDK-ARM
+*.uvguix.*
+*.uvoptx
+*.scvd
+*.uvproj.*.bak
+JLinkLog.txt
+JLinkSettings.ini
+*.jlink
+
+# CubeIDE / Eclipse
+.metadata/
+.settings/
+*.launch
+.cproject
+.project
+
+# STM32CubeMX
+.ioc.bak
+
+# 系统文件
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
