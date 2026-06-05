@@ -21,6 +21,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "stdio.h"
+#include "string.h"
 
 /* USER CODE END Includes */
 
@@ -94,13 +96,22 @@ int main(void)
   MX_ADC1_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  int value = 0;
+  float voltage = 0.0;
+  char message[64] = "";
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    HAL_ADC_Start(&hadc1);
+    HAL_ADC_PollForConversion(&hadc1, 100);
+    value = HAL_ADC_GetValue(&hadc1);
+    voltage = ((float)value / 4095.0f) * 3.3f;
+    sprintf(message, "ADC Value: %d, Voltage: %.2f", value, voltage);
+    HAL_UART_Transmit(&huart2, (uint8_t*)message, strlen(message), 1000);
+    HAL_Delay(3000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
