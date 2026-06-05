@@ -126,7 +126,7 @@ int main(void)
     HAL_Delay(500);
     NTC_R = ADC2Resistance(values[1]);
     temperature = resistance2Temperature(NTC_R);
-    sprintf(message, "Temperature: %.2f\r\n", temperature);
+    sprintf(message, "阻值：%.2fΩ  温度：%.2f℃", NTC_R, temperature);
     HAL_UART_Transmit(&huart2, (uint8_t*)message, strlen(message), 1000);
     
 
