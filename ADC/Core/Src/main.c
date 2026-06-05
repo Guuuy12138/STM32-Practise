@@ -99,6 +99,7 @@ int main(void)
   int value = 0;
   float voltage = 0.0;
   char message[64] = "";
+  HAL_ADCEx_Calibration_Start(&hadc1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
