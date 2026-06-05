@@ -23,7 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include "stdio.h"
 #include "string.h"
-#include <stdint.h>
+#include "math.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -65,11 +65,16 @@ static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN 0 */
 uint16_t values[4];
 char message[64] = "";
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
-  if(hiadc == &hadc1){
-    sprintf(message, "ADC1: %d, %d, %d, %d", values[0], values[1], values[2], values[3]);
-    HAL_UART_Transmit(&huart2, (uint8_t*)message, strlen(message), 1000);
-  }
+
+float ADC2Resistance(uint32_t adc_value) {
+  return (adc_value / (4095.0f - adc_value)) * 10000.0f;
+}
+
+float resistance2Temperature(float R1) {
+  float B = 3950.0f;
+  float R2 = 10000.0f;
+  float T2 = 25.0f;
+  return (1.0 / ((1.0 / B) * log(R1 / R2) + (1.0 / (T2 + 273.15))) - 273.15);
 }
 /* USER CODE END 0 */
 
@@ -106,19 +111,24 @@ int main(void)
   MX_ADC1_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+
   HAL_ADCEx_Calibration_Start(&hadc1);
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)values, sizeof(values) / sizeof(uint16_t));
 
-
-
-
+  float NTC_R = 0.0;
+  float temperature = 0.0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
-  {
-    HAL_ADC_Start_DMA(&hiadc1, (uint32_t*)values, sizeof(values) / sizeof(uint16_t));
-    HAL_Delay(1000);
+  { 
+    HAL_Delay(500);
+    NTC_R = ADC2Resistance(values[1]);
+    temperature = resistance2Temperature(NTC_R);
+    sprintf(message, "Temperature: %.2f\r\n", temperature);
+    HAL_UART_Transmit(&huart2, (uint8_t*)message, strlen(message), 1000);
+    
 
     /* USER CODE END WHILE */
 
@@ -195,7 +205,7 @@ static void MX_ADC1_Init(void)
   */
   hadc1.Instance = ADC1;
   hadc1.Init.ScanConvMode = ADC_SCAN_ENABLE;
-  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.ContinuousConvMode = ENABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
