@@ -45,7 +45,7 @@ DMA_HandleTypeDef hdma_usart3_tx;
 DMA_HandleTypeDef hdma_usart3_rx;
 
 /* USER CODE BEGIN PV */
-uint8_t SHUJV[50];
+uint8_t SHUJV[50];  /* 串口 DMA 接收缓冲区，存储接收到的数据帧 */
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -59,36 +59,39 @@ static void MX_USART3_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+/* 串口空闲中断+DMA 接收回调：收到一帧数据时触发 */
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size){
   if (huart == &huart3) {
-    HAL_UART_Transmit_DMA(&huart3, SHUJV, Size);
-    if (SHUJV[0] == 0xAA) {
-      if (SHUJV[1] == Size) {
+    HAL_UART_Transmit_DMA(&huart3, SHUJV, Size);    /* 将收到的数据原样回传（回显） */
+
+    /* 数据帧格式：0xAA + 长度 + (LED编号 + 状态)*N + 校验和 */
+    if (SHUJV[0] == 0xAA) {                          /* 帧头校验 */
+      if (SHUJV[1] == Size) {                        /* 长度校验 */
         uint8_t SUM = 0;
-        for(int i = 0;i < Size - 1;i++){
+        for(int i = 0;i < Size - 1;i++){              /* 累加除最后一字节外的所有数据 */
           SUM += SHUJV[i];
         }
-        if (SUM == SHUJV[Size - 1]) {
-          for (int i = 2; i < Size - 1; i += 2) {
-                GPIO_PinState BIANL = GPIO_PIN_SET;
-                if (SHUJV[i+1] == 0x00) {
+        if (SUM == SHUJV[Size - 1]) {                 /* 和校验：累加结果 == 最后一字节 */
+          for (int i = 2; i < Size - 1; i += 2) {     /* 从第3字节起，每两字节为一组控制指令 */
+                GPIO_PinState BIANL = GPIO_PIN_SET;   /* 默认高电平（关灯） */
+                if (SHUJV[i+1] == 0x00) {             /* 状态字节为 0x00 时低电平（开灯） */
                   BIANL = GPIO_PIN_RESET;
                 }
-                if (SHUJV[i] == 0x01) {
+                if (SHUJV[i] == 0x01) {               /* LED编号=0x01 → 蓝灯 */
                   HAL_GPIO_WritePin(LED_LAN_GPIO_Port, LED_LAN_Pin, BIANL);
-                }else if(SHUJV[i] == 0x02) {
+                }else if(SHUJV[i] == 0x02) {          /* LED编号=0x02 → 绿灯 */
                   HAL_GPIO_WritePin(LED_LV_GPIO_Port, LED_LV_Pin, BIANL);
-                }else if(SHUJV[i] == 0x03) {
+                }else if(SHUJV[i] == 0x03) {          /* LED编号=0x03 → 红灯 */
                   HAL_GPIO_WritePin(LED_HONG_GPIO_Port, LED_HONG_Pin, BIANL);
                 }
           }
-        
+
         }
       }
-    
+
     }
-    HAL_UARTEx_ReceiveToIdle_DMA(&huart3, SHUJV, sizeof(SHUJV));
-    __HAL_DMA_DISABLE_IT(&hdma_usart3_rx, DMA_IT_HT);
+    HAL_UARTEx_ReceiveToIdle_DMA(&huart3, SHUJV, sizeof(SHUJV)); /* 重新开启 DMA 接收 */
+    __HAL_DMA_DISABLE_IT(&hdma_usart3_rx, DMA_IT_HT);            /* 关闭半传输中断，避免干扰 */
   }
 }
 /* USER CODE END 0 */
@@ -125,8 +128,8 @@ int main(void)
   MX_DMA_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
-  HAL_UARTEx_ReceiveToIdle_DMA(&huart3, SHUJV, sizeof(SHUJV));
-  __HAL_DMA_DISABLE_IT(&hdma_usart3_rx, DMA_IT_HT);
+  HAL_UARTEx_ReceiveToIdle_DMA(&huart3, SHUJV, sizeof(SHUJV));  /* 开启空闲中断+DMA 接收数据 */
+  __HAL_DMA_DISABLE_IT(&hdma_usart3_rx, DMA_IT_HT);             /* 关闭 DMA 半传输中断 */
   /* USER CODE END 2 */
 
   /* Infinite loop */
