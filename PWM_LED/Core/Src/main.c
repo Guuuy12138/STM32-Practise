@@ -91,38 +91,43 @@ int main(void)
   MX_GPIO_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);  /* 启动 TIM3 通道1 PWM（PA6） */
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);  /* 启动 TIM3 通道2 PWM（PA7） */
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);  /* 启动 TIM3 通道3 PWM（PB0） */
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
+    /* 第1轮呼吸：占空比 0%→100%（渐亮） */
     for(int i =0; i<=100; i++){
     	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, i);
     	HAL_Delay(10);
     }
+    /* 第1轮呼吸：占空比 100%→0%（渐灭） */
     for(int i =100; i>=0; i--){
     	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, i);
     	HAL_Delay(10);
     }
 
+    /* 第2轮呼吸：渐亮 */
     for(int j =0; j<=100; j++){
     	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, j);
     	HAL_Delay(10);
     }
+    /* 第2轮呼吸：渐灭 */
     for(int j =100; j>=0; j--){
     	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, j);
     	HAL_Delay(10);
     }
 
+    /* 第3轮呼吸：渐亮 */
     for(int k =0; k<=100; k++){
     	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, k);
     	HAL_Delay(10);
     }
+    /* 第3轮呼吸：渐灭 */
     for(int k =100; k>=0; k--){
     	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, k);
     	HAL_Delay(10);
