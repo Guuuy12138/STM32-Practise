@@ -21,8 +21,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "stdio.h"
-#include "string.h"
+#include "stdio.h"   /* 标准输入输出库，用于 sprintf 格式化字符串 */
+#include "string.h"  /* 字符串操作库，用于 strlen 获取字符串长度 */
 
 /* USER CODE END Includes */
 
@@ -96,23 +96,23 @@ int main(void)
   MX_ADC1_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  int value = 0;
-  float voltage = 0.0;
-  char message[64] = "";
-  HAL_ADCEx_Calibration_Start(&hadc1);
-  HAL_ADC_Start(&hadc1);
-  HAL_ADC_PollForConversion(&hadc1, 100);
+  int value = 0;              /* ADC 原始采样值（0~4095） */
+  float voltage = 0.0;        /* 转换后的电压值（单位：V） */
+  char message[64] = "";      /* 串口发送缓冲区 */
+  HAL_ADCEx_Calibration_Start(&hadc1);  /* ADC 自动校准，提高采样精度 */
+  HAL_ADC_Start(&hadc1);                /* 启动 ADC 转换 */
+  HAL_ADC_PollForConversion(&hadc1, 100); /* 等待首次转换完成，超时 100ms */
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    value = HAL_ADC_GetValue(&hadc1);
-    voltage = ((float)value / 4095.0f) * 3.3f;
-    sprintf(message, "ADC Value: %d, Voltage: %.2f", value, voltage);
-    HAL_UART_Transmit(&huart2, (uint8_t*)message, strlen(message), 1000);
-    HAL_Delay(3000);
+    value = HAL_ADC_GetValue(&hadc1);                   /* 读取 ADC 采样值（12位，范围 0~4095） */
+    voltage = ((float)value / 4095.0f) * 3.3f;          /* 将采样值转换为实际电压值：V = (value / 4095) * 3.3V */
+    sprintf(message, "ADC Value: %d, Voltage: %.2f", value, voltage); /* 格式化采样结果字符串 */
+    HAL_UART_Transmit(&huart2, (uint8_t*)message, strlen(message), 1000); /* 通过串口发送结果 */
+    HAL_Delay(3000);    /* 延时 3 秒，然后进行下一次采样 */
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
