@@ -66,28 +66,16 @@ static void MX_USART2_UART_Init(void);
 uint16_t values[4];      /* DMA 自动存储 4 个通道的 ADC 采样值 */
 char message[64] = "";   /* 串口发送缓冲区 */
 
-/**
- * @brief  将 ADC 采样值转换为 NTC 热敏电阻阻值
- * @param  adc_value  ADC 原始采样值（0~4095）
- * @retval 计算出的电阻值（单位：Ω）
- * @note   公式：R = (V_adc / (3.3 - V_adc)) * R_分压
- *         其中 V_adc = (adc_value / 4095) * 3.3，R_分压 = 10kΩ
- */
+/* ADC 采样值 → NTC 阻值（Ω） */
 float ADC2Resistance(uint32_t adc_value) {
   return (adc_value / (4095.0f - adc_value)) * 10000.0f;
 }
 
-/**
- * @brief  根据 NTC 阻值计算温度（Steinhart-Hart 方程简化版）
- * @param  R1  NTC 当前阻值（单位：Ω）
- * @retval 温度值（单位：℃）
- * @note   B = 3950, R2(25℃) = 10kΩ
- *         公式：1/T = 1/B * ln(R1/R2) + 1/T2
- */
+/* NTC 阻值（Ω）→ 温度（℃） B=3950, R2(25℃)=10kΩ */
 float resistance2Temperature(float R1) {
-  float B = 3950.0f;     /* NTC 热敏电阻的 B 值（3950K） */
-  float R2 = 10000.0f;   /* 25℃ 时的标称阻值 10kΩ */
-  float T2 = 25.0f;      /* 标称温度 25℃ */
+  float B = 3950.0f;     /* NTC 的 B 值 */
+  float R2 = 10000.0f;   /* 25℃ 标称阻值 */
+  float T2 = 25.0f;      /* 标称温度 */
   return (1.0 / ((1.0 / B) * log(R1 / R2) + (1.0 / (T2 + 273.15))) - 273.15);
 }
 /* USER CODE END 0 */
@@ -127,7 +115,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   HAL_ADCEx_Calibration_Start(&hadc1);                 /* ADC 自动校准，提高采样精度 */
-  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)values, 4);     /* 启动 ADC+DMA，自动扫描 4 个通道存入 values 数组 */
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)values, sizeof(values) / sizeof(uint16_t)); /* 启动 ADC+DMA，自动扫描 4 个通道存入 values 数组 */
 
   float NTC_R = 0.0;          /* NTC 热敏电阻阻值（Ω） */
   float temperature = 0.0;    /* 计算出的温度值（℃） */
