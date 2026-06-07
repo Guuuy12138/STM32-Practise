@@ -24,9 +24,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "oled.h"
-#include <stdio.h>
-
+#include "oled.h"    /* OLED 显示屏驱动 */
+#include <stdio.h>   /* 标准输入输出库，用于 sprintf */
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -93,25 +92,25 @@ int main(void)
   MX_I2C1_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
-  HAL_Delay(20);
-  OLED_Init();
-  HAL_TIM_Base_Start(&htim2);
-  int counter = 0;
-  char message[20] = "";
+  HAL_Delay(20);        /* 等待 OLED 上电稳定 */
+  OLED_Init();          /* 初始化 OLED 显示屏 */
+  HAL_TIM_Base_Start(&htim2);  /* 启动 TIM2，通过 ETR（PA0）接收红外传感器脉冲计数 */
+  int counter = 0;              /* TIM2 当前计数值 */
+  char message[20] = "";        /* OLED 显示缓冲区 */
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    OLED_NewFrame();
+    OLED_NewFrame();                                                  /* 开始新一帧绘制 */
 
-    counter = __HAL_TIM_GET_COUNTER(&htim2);
-    sprintf(message, "Counter: %d", counter);
-    OLED_PrintString(0, 0, message, &font16x16, OLED_COLOR_NORMAL);
+    counter = __HAL_TIM_GET_COUNTER(&htim2);                          /* 读取 TIM2 当前计数值 */
+    sprintf(message, "Counter: %d", counter);                         /* 格式化为字符串 */
+    OLED_PrintString(0, 0, message, &font16x16, OLED_COLOR_NORMAL);   /* OLED 显示计数值 */
 
-    OLED_ShowFrame();
-    HAL_Delay(100);
+    OLED_ShowFrame();                                                 /* 刷新显示 */
+    HAL_Delay(100);                                                   /* 每 100ms 更新一次 */
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
