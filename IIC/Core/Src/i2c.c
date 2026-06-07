@@ -21,11 +21,13 @@
 #include "i2c.h"
 
 /* USER CODE BEGIN 0 */
+/* I2C 发送完成回调：状态机 → 2（发送完成，可以接收数据） */
 void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c){
   if(hi2c == &hi2c1){
     aht20_zhuangtai = 2;
   }
 }
+/* I2C 接收完成回调：状态机 → 4（接收完成，可以计算并输出） */
 void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c){
   if(hi2c == &hi2c1){
     aht20_zhuangtai = 4;

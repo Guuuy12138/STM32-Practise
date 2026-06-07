@@ -25,9 +25,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "aht20.h"
-#include "stdio.h"
-#include "string.h"
+#include "aht20.h"    /* AHT20 温湿度传感器驱动头文件 */
+#include "stdio.h"    /* 标准输入输出库，用于 sprintf 格式化字符串 */
+#include "string.h"   /* 字符串操作库，用于 strlen 获取字符串长度 */
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -49,8 +49,8 @@
 
 /* USER CODE BEGIN PV */
 //状态机|0：初始状态 1：发送指令中 2：发送完成（将数据保存在变量中） 3：接收数据中 4：接收完成（计算并输出数据）
-uint8_t aht20_zhuangtai = 0;
-float aht20_wendu, aht20_shidu;
+uint8_t aht20_zhuangtai = 0;   /* AHT20 状态机 */
+float aht20_wendu, aht20_shidu; /* AHT20 温度和湿度读数 */
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -97,27 +97,27 @@ int main(void)
   MX_I2C1_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-    AHT20_init();
+  AHT20_init();         /* 初始化 AHT20 温湿度传感器 */
 
-char message[100];
+  char message[100];    /* 串口发送缓冲区 */
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    if(aht20_zhuangtai == 0){
+    if(aht20_zhuangtai == 0){         /* 状态0：发送测量指令 */
       AHT20_fasong();
       aht20_zhuangtai = 1;
-    }else if(aht20_zhuangtai == 2){
+    }else if(aht20_zhuangtai == 2){   /* 状态2：指令发送完成，开始接收数据 */
       AHT20_jieshou();
       aht20_zhuangtai = 3;
-    }else if(aht20_zhuangtai == 4){
-      AHT20_jisuan(&aht20_wendu, &aht20_shidu);
-      sprintf(message, "温度：%.2f ℃, 湿度：%.2f %%\r\n", aht20_wendu, aht20_shidu);
-      HAL_UART_Transmit(&huart2, (uint8_t*)message, strlen(message), 100);
-      HAL_Delay(1000);
-      aht20_zhuangtai = 0;
+    }else if(aht20_zhuangtai == 4){   /* 状态4：数据接收完成，计算并输出 */
+      AHT20_jisuan(&aht20_wendu, &aht20_shidu);                        /* 计算温湿度 */
+      sprintf(message, "温度：%.2f ℃, 湿度：%.2f %%\r\n", aht20_wendu, aht20_shidu); /* 格式化输出 */
+      HAL_UART_Transmit(&huart2, (uint8_t*)message, strlen(message), 100); /* 串口发送结果 */
+      HAL_Delay(1000);                                                  /* 延时1秒 */
+      aht20_zhuangtai = 0;                                              /* 回到初始状态 */
     }
     /* USER CODE END WHILE */
 
