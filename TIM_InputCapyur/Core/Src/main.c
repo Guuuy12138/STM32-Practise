@@ -26,9 +26,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "oled.h"
-#include "stdio.h"
-#include "string.h"
+#include "oled.h"    /* OLED 显示屏驱动 */
+#include "stdio.h"   /* 标准输入输出库，用于 sprintf */
+#include "string.h"  /* 字符串操作库，用于 strlen */
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -60,14 +60,17 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-int upEdge = 0; //上升沿时间
-int downEdge = 0; //下降沿时间
-float distance = 0; //计算出的距离
+/* HC-SR04 超声波测距：TIM1_CH3 捕获上升沿，CH4 捕获下降沿，差值即为脉冲宽度 */
+int upEdge = 0;      /* 上升沿 TIM 计数值 */
+int downEdge = 0;    /* 下降沿 TIM 计数值 */
+float distance = 0;  /* 计算出的距离（cm） */
+
+/* TIM1 输入捕获回调：CH4 捕获到下降沿时触发 */
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim){
   if(htim == &htim1 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_4){
-    upEdge = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_3);
-    downEdge = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_4);
-    distance = (downEdge - upEdge) * 0.034 / 2;
+    upEdge = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_3);   /* 读取上升沿时间 */
+    downEdge = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_4); /* 读取下降沿时间 */
+    distance = (downEdge - upEdge) * 0.034 / 2;  /* 脉冲宽度 × 声速(0.034cm/μs) ÷ 2 = 距离(cm) */
   }
 }
 /* USER CODE END 0 */
@@ -104,28 +107,30 @@ int main(void)
   MX_I2C1_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
-  char message[20] = "";
+  char message[20] = "";   /* OLED 显示缓冲区 */
 
-  HAL_Delay(20);
-  OLED_Init();
-  HAL_TIM_Base_Start(&htim1);
-  HAL_TIM_IC_Start(&htim1, TIM_CHANNEL_3); 
-  HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_4); 
+  HAL_Delay(20);                              /* 等待 OLED 上电稳定 */
+  OLED_Init();                                /* 初始化 OLED */
+  HAL_TIM_Base_Start(&htim1);                 /* 启动 TIM1 基时（Prescaler=72，1MHz=1μs/计数） */
+  HAL_TIM_IC_Start(&htim1, TIM_CHANNEL_3);    /* 启动 CH3 输入捕获（上升沿） */
+  HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_4); /* 启动 CH4 输入捕获（下降沿，中断方式） */
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    HAL_GPIO_WritePin(Trig_GPIO_Port, Trig_Pin, GPIO_PIN_SET);
-    HAL_Delay(1);
-    HAL_GPIO_WritePin(Trig_GPIO_Port, Trig_Pin, GPIO_PIN_RESET);
-    __HAL_TIM_SET_COUNTER(&htim1, 0);
-    HAL_Delay(20);
-    OLED_NewFrame();
-    sprintf(message, "距离: %.2f cm", distance);
-    OLED_PrintString(0, 0, message, &font16x16, OLED_COLOR_NORMAL);
-    OLED_ShowFrame();
+    /* 发送 Trig 脉冲（≥10μs）触发 HC-SR04 测距 */
+    HAL_GPIO_WritePin(Trig_GPIO_Port, Trig_Pin, GPIO_PIN_SET);   /* Trig 拉高 */
+    HAL_Delay(1);                                                 /* 保持 1ms 高电平 */
+    HAL_GPIO_WritePin(Trig_GPIO_Port, Trig_Pin, GPIO_PIN_RESET); /* Trig 拉低，传感器开始发送超声波 */
+    __HAL_TIM_SET_COUNTER(&htim1, 0);                             /* 计数器归零，准备测量回波脉宽 */
+    HAL_Delay(20);                                                /* 等待测距完成 */
+
+    OLED_NewFrame();                                              /* 开始新一帧绘制 */
+    sprintf(message, "距离: %.2f cm", distance);                   /* 格式化距离字符串 */
+    OLED_PrintString(0, 0, message, &font16x16, OLED_COLOR_NORMAL); /* OLED 显示距离 */
+    OLED_ShowFrame();                                             /* 刷新显示 */
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
