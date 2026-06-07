@@ -21,9 +21,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "stdio.h"
-#include "string.h"
-#include "math.h"
+#include "stdio.h"   /* 标准输入输出库，用于 sprintf 格式化字符串 */
+#include "string.h"  /* 字符串操作库，用于 strlen 获取字符串长度 */
+#include "math.h"    /* 数学库，用于 log() 对数运算（NTC 温度计算） */
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -63,17 +63,31 @@ static void MX_USART2_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint16_t values[4];
-char message[64] = "";
+uint16_t values[4];      /* DMA 自动存储 4 个通道的 ADC 采样值 */
+char message[64] = "";   /* 串口发送缓冲区 */
 
+/**
+ * @brief  将 ADC 采样值转换为 NTC 热敏电阻阻值
+ * @param  adc_value  ADC 原始采样值（0~4095）
+ * @retval 计算出的电阻值（单位：Ω）
+ * @note   公式：R = (V_adc / (3.3 - V_adc)) * R_分压
+ *         其中 V_adc = (adc_value / 4095) * 3.3，R_分压 = 10kΩ
+ */
 float ADC2Resistance(uint32_t adc_value) {
   return (adc_value / (4095.0f - adc_value)) * 10000.0f;
 }
 
+/**
+ * @brief  根据 NTC 阻值计算温度（Steinhart-Hart 方程简化版）
+ * @param  R1  NTC 当前阻值（单位：Ω）
+ * @retval 温度值（单位：℃）
+ * @note   B = 3950, R2(25℃) = 10kΩ
+ *         公式：1/T = 1/B * ln(R1/R2) + 1/T2
+ */
 float resistance2Temperature(float R1) {
-  float B = 3950.0f;
-  float R2 = 10000.0f;
-  float T2 = 25.0f;
+  float B = 3950.0f;     /* NTC 热敏电阻的 B 值（3950K） */
+  float R2 = 10000.0f;   /* 25℃ 时的标称阻值 10kΩ */
+  float T2 = 25.0f;      /* 标称温度 25℃ */
   return (1.0 / ((1.0 / B) * log(R1 / R2) + (1.0 / (T2 + 273.15))) - 273.15);
 }
 /* USER CODE END 0 */
@@ -112,24 +126,23 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  HAL_ADCEx_Calibration_Start(&hadc1);
-  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)values, sizeof(values) / sizeof(uint16_t));
+  HAL_ADCEx_Calibration_Start(&hadc1);                 /* ADC 自动校准，提高采样精度 */
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)values, 4);     /* 启动 ADC+DMA，自动扫描 4 个通道存入 values 数组 */
 
-  float NTC_R = 0.0;
-  float temperature = 0.0;
+  float NTC_R = 0.0;          /* NTC 热敏电阻阻值（Ω） */
+  float temperature = 0.0;    /* 计算出的温度值（℃） */
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   { 
-    HAL_Delay(500);
-    NTC_R = ADC2Resistance(values[1]);
-    temperature = resistance2Temperature(NTC_R);
-    sprintf(message, "阻值：%.2fΩ  温度：%.2f℃", NTC_R, temperature);
-    HAL_UART_Transmit(&huart2, (uint8_t*)message, strlen(message), 1000);
+    HAL_Delay(500);                                               /* 每 500ms 采样一次 */
+    NTC_R = ADC2Resistance(values[1]);                            /* 取 CH4（values[1]）计算 NTC 阻值 */
+    temperature = resistance2Temperature(NTC_R);                  /* 由阻值换算温度 */
+    sprintf(message, "阻值：%.2fΩ  温度：%.2f℃", NTC_R, temperature); /* 格式化输出字符串 */
+    HAL_UART_Transmit(&huart2, (uint8_t*)message, strlen(message), 1000); /* 串口发送结果 */
     
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
