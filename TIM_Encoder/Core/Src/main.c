@@ -24,9 +24,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "oled.h"
-#include"string.h"
-#include"stdio.h"
+#include "oled.h"     /* OLED 显示屏驱动 */
+#include"string.h"    /* 字符串操作库 */
+#include"stdio.h"     /* 标准输入输出库，用于 sprintf */
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -94,14 +94,14 @@ int main(void)
   MX_TIM1_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
-  int channel_index = 0;
-  uint32_t channels[3] = {TIM_CHANNEL_1, TIM_CHANNEL_2, TIM_CHANNEL_3};
-  HAL_Delay(20);
-  OLED_Init();
-  HAL_TIM_Encoder_Start(&htim1, TIM_CHANNEL_ALL);
-  HAL_TIM_PWM_Start(&htim3, channels[channel_index]);
-  int count = 0;
-  char message[20] = "";
+  int channel_index = 0;                                    /* 当前PWM通道索引(0=CH1,1=CH2,2=CH3) */
+  uint32_t channels[3] = {TIM_CHANNEL_1, TIM_CHANNEL_2, TIM_CHANNEL_3}; /* 三个PWM通道供切换 */
+  HAL_Delay(20);                                            /* 等待OLED上电稳定 */
+  OLED_Init();                                              /* 初始化OLED显示屏 */
+  HAL_TIM_Encoder_Start(&htim1, TIM_CHANNEL_ALL);           /* 启动TIM1编码器模式读取旋转编码器 */
+  HAL_TIM_PWM_Start(&htim3, channels[channel_index]);       /* 启动TIM3当前通道PWM输出 */
+  int count = 0;                                            /* 编码器计数值 */
+  char message[20] = "";                                    /* OLED显示缓冲区 */
 
   /* USER CODE END 2 */
 
@@ -109,31 +109,31 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    OLED_NewFrame();
-    count = __HAL_TIM_GET_COUNTER(&htim1);
-    if(count > 6000){
+    OLED_NewFrame();                                                          /* 开始新一帧绘制 */
+    count = __HAL_TIM_GET_COUNTER(&htim1);                                    /* 读取编码器当前计数值 */
+    if(count > 6000){                                                         /* 超过6000则归零（防溢出） */
       count = 0;
       __HAL_TIM_SET_COUNTER(&htim1, 0);
-    }else if(count >100){
+    }else if(count >100){                                                     /* 上限钳位到100（进度条范围） */
       count = 100;
       __HAL_TIM_SET_COUNTER(&htim1, 100);
     }
-    sprintf(message, "Count: %d", count);
-    OLED_PrintString(13, 0, message, &font16x16, OLED_COLOR_NORMAL);
-    OLED_DrawRectangle(13, 25, 101, 12, OLED_COLOR_NORMAL);
-    OLED_DrawFilledRectangle(14, 26, count, 11, OLED_COLOR_NORMAL);
-    if(HAL_GPIO_ReadPin(Key_GPIO_Port, Key_Pin) == GPIO_PIN_RESET){
-      HAL_Delay(20);
-      if(HAL_GPIO_ReadPin(Key_GPIO_Port, Key_Pin) == GPIO_PIN_RESET){
-        HAL_TIM_PWM_Stop(&htim3, channels[channel_index]);
-        channel_index = (channel_index + 1) % 3;
-        HAL_TIM_PWM_Start(&htim3, channels[channel_index]);
+    sprintf(message, "Count: %d", count);                                     /* 格式化计数值 */
+    OLED_PrintString(13, 0, message, &font16x16, OLED_COLOR_NORMAL);          /* 显示数字 */
+    OLED_DrawRectangle(13, 25, 101, 12, OLED_COLOR_NORMAL);                   /* 绘制进度条外框 */
+    OLED_DrawFilledRectangle(14, 26, count, 11, OLED_COLOR_NORMAL);           /* 绘制进度条填充 */
+    if(HAL_GPIO_ReadPin(Key_GPIO_Port, Key_Pin) == GPIO_PIN_RESET){           /* 按键按下（低电平有效） */
+      HAL_Delay(20);                                                          /* 消抖 */
+      if(HAL_GPIO_ReadPin(Key_GPIO_Port, Key_Pin) == GPIO_PIN_RESET){         /* 再次确认按下 */
+        HAL_TIM_PWM_Stop(&htim3, channels[channel_index]);                    /* 停止当前PWM通道 */
+        channel_index = (channel_index + 1) % 3;                              /* 切换到下一个通道(0→1→2→0) */
+        HAL_TIM_PWM_Start(&htim3, channels[channel_index]);                   /* 启动新通道PWM */
       }
-      while(HAL_GPIO_ReadPin(Key_GPIO_Port, Key_Pin) == GPIO_PIN_RESET);
+      while(HAL_GPIO_ReadPin(Key_GPIO_Port, Key_Pin) == GPIO_PIN_RESET);      /* 等待按键释放 */
     }
-    __HAL_TIM_SET_COMPARE(&htim3, channels[channel_index], count);
-    OLED_ShowFrame();
-    HAL_Delay(100);
+    __HAL_TIM_SET_COMPARE(&htim3, channels[channel_index], count);            /* 设置PWM占空比=计数值 */
+    OLED_ShowFrame();                                                         /* 刷新显示 */
+    HAL_Delay(100);                                                           /* 每100ms更新一次 */
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
