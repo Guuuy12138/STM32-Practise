@@ -21,9 +21,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "stdio.h"
-#include "stm32f1xx_hal_tim.h"
-#include "string.h"
+#include "stdio.h"              /* 标准输入输出库，用于 sprintf 格式化字符串 */
+#include "stm32f1xx_hal_tim.h"  /* TIM 定时器 HAL 库头文件 */
+#include "string.h"             /* 字符串操作库，用于 strlen 获取字符串长度 */
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -61,10 +61,12 @@ static void MX_USART2_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-char data[] = "一秒过去了";
+char data[] = "一秒过去了";  /* 定时器溢出时通过串口发送的字符串 */
+
+/* TIM 定时器溢出回调：每秒触发一次 */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
   if(htim == &htim4){
-    HAL_UART_Transmit_IT(&huart2, (uint8_t*)data, strlen(data));
+    HAL_UART_Transmit_IT(&huart2, (uint8_t*)data, strlen(data));  /* 串口发送"一秒过去了" */
   }
 }
 /* USER CODE END 0 */
@@ -101,19 +103,19 @@ int main(void)
   MX_TIM4_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  HAL_TIM_Base_Start_IT(&htim4);
-  int counter = 0;
-  char message[20];
+  HAL_TIM_Base_Start_IT(&htim4);  /* 启动 TIM4 定时器，使能溢出中断（每1秒触发） */
+  int counter = 0;                /* 定时器计数器值 */
+  char message[20];               /* 串口发送缓冲区 */
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    counter = __HAL_TIM_GET_COUNTER(&htim4);
-    sprintf(message, "Counter: %d", counter);
-    //HAL_UART_Transmit_IT(&huart2, (uint8_t*)message, strlen(message));
-    HAL_Delay(99);
+    counter = __HAL_TIM_GET_COUNTER(&htim4);            /* 读取 TIM4 当前计数值（0~9999） */
+    sprintf(message, "Counter: %d", counter);           /* 格式化计数值字符串 */
+    //HAL_UART_Transmit_IT(&huart2, (uint8_t*)message, strlen(message)); /* 串口输出（已注释） */
+    HAL_Delay(99);                                      /* 每 99ms 读取一次 */
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
